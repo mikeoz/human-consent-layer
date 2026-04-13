@@ -1,0 +1,136 @@
+{
+  "_comment": "Reddit Consumer Agent Account — CARD Set Template v0.1.0. Fill in principal.id, entity_card.agent_id, entity_card.principal_id, and entity_card.certification_hash before presentation.",
+  "set_version": "0.1.0",
+  "set_id": "urn:uuid:GENERATE-BEFORE-PRESENTATION",
+  "presented_at": "FILL-AT-PRESENTATION-TIME",
+  "expires_at": null,
+  "principal": {
+    "id": "card:entity:user-FILL-IN",
+    "type": "nhb",
+    "signature": null
+  },
+  "entity_card": {
+    "card_type": "entity",
+    "agent_id": "card:entity:agent-FILL-IN",
+    "agent_name": "BigCROC",
+    "principal_id": "card:entity:user-FILL-IN",
+    "platform": "CROCbox / OpenClaw Gateway",
+    "shield_level": "green",
+    "tno_id": "opn.li",
+    "ve_endpoint": "https://ve-staging.opn.li/verify",
+    "certification_hash": null,
+    "delegation_vrcs": null
+  },
+  "data_card": {
+    "card_type": "data",
+    "data_resources": [
+      {
+        "resource": "subreddit:posts",
+        "access": "read",
+        "description": "Read post titles, bodies, and metadata from subscribed subreddits"
+      },
+      {
+        "resource": "subreddit:comments",
+        "access": "read",
+        "description": "Read comment threads on posts"
+      },
+      {
+        "resource": "user:subscriptions",
+        "access": "read",
+        "description": "List of subreddits the principal subscribes to"
+      },
+      {
+        "resource": "user:saved_posts",
+        "access": "read",
+        "description": "Posts the principal has saved"
+      }
+    ],
+    "excluded_resources": [
+      {
+        "resource": "user:private_messages",
+        "reason": "DMs are outside agent scope"
+      },
+      {
+        "resource": "user:voting_history",
+        "reason": "Upvote/downvote patterns are private"
+      },
+      {
+        "resource": "moderation:tools",
+        "reason": "Agent may not moderate"
+      },
+      {
+        "resource": "user:settings",
+        "reason": "Agent may not change account settings"
+      }
+    ],
+    "data_format": "JSON",
+    "nhb_readable_summary": "Your agent can read posts and comments from your subscribed subreddits. It cannot read your DMs, see your upvotes, or act as a moderator."
+  },
+  "use_card": {
+    "card_type": "use",
+    "permitted_actions": [
+      {
+        "action": "summarize",
+        "description": "Generate summaries of threads and discussions"
+      },
+      {
+        "action": "search",
+        "description": "Search across subreddit content for specific topics"
+      },
+      {
+        "action": "curate",
+        "description": "Select and organize posts matching your interests"
+      },
+      {
+        "action": "alert",
+        "description": "Notify you of new content matching your criteria"
+      }
+    ],
+    "prohibited_actions": [
+      {
+        "action": "post",
+        "reason": "Agent may not create posts on your behalf"
+      },
+      {
+        "action": "comment",
+        "reason": "Agent may not comment"
+      },
+      {
+        "action": "vote",
+        "reason": "Agent may not upvote or downvote"
+      },
+      {
+        "action": "follow",
+        "reason": "Agent may not subscribe or unsubscribe from subreddits"
+      },
+      {
+        "action": "export_bulk",
+        "reason": "Agent may not bulk-download content for external storage"
+      }
+    ],
+    "nhb_readable_summary": "Your agent can summarize, search, and curate Reddit content for you. It cannot post, comment, vote, or change your subscriptions."
+  },
+  "boundary_card": {
+    "card_type": "boundary",
+    "constraint_domain": "reddit-access",
+    "time_window": {
+      "start": "06:00",
+      "end": "22:00",
+      "timezone": "America/New_York"
+    },
+    "rate_limit": {
+      "calls_per_day": 1000,
+      "calls_per_minute": 10
+    },
+    "scope_constraints": {
+      "subreddit_scope": "subscribed",
+      "content_age_days": 30,
+      "nsfw_allowed": false,
+      "tier": "consumer",
+      "tier_price": "$4.99/month"
+    },
+    "require_confirmation": true,
+    "nhb_readable_summary": "Your agent can access your subscribed subreddits between 6am-10pm ET, up to 1,000 requests/day. No NSFW content. Posts older than 30 days excluded."
+  },
+  "tno_attestation": null
+}

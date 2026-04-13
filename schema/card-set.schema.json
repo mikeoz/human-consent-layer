@@ -1,0 +1,420 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://opn.li/schema/card-set/v0.1.0",
+  "title": "CARD Set",
+  "description": "A CARD Set is the presentation package a CARD-Carrying Agent (CCA) presents to a CARD-Receiving platform. It bundles four CARDs — Entity, Data, Use, and Boundary — into a single signed credential that the platform validates against the Verification Endpoint (VE). The CARD Set is the mechanism that makes 'My Data + Your AI + My Control' a protocol.",
+  "type": "object",
+  "required": [
+    "set_version",
+    "set_id",
+    "entity_card",
+    "data_card",
+    "use_card",
+    "boundary_card",
+    "principal",
+    "presented_at"
+  ],
+  "properties": {
+    "set_version": {
+      "type": "string",
+      "const": "0.1.0",
+      "description": "Schema version. Follows semver."
+    },
+    "set_id": {
+      "type": "string",
+      "format": "uri",
+      "description": "Globally unique identifier for this CARD Set presentation.",
+      "examples": [
+        "urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      ]
+    },
+    "presented_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when this CARD Set was presented to the receiver."
+    },
+    "expires_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "ISO 8601 expiration for this CARD Set session. Null = single-use presentation."
+    },
+    "principal": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "description": "The NHB (Normal Human Being) who authorized this CARD Set. The principal is always a human — never an agent, never a system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uri",
+          "description": "Principal identifier on the Trust Network.",
+          "examples": [
+            "card:entity:user-mike-001"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "const": "nhb",
+          "description": "Always 'nhb'. Only a human can authorize a CARD Set."
+        },
+        "signature": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Cryptographic signature from the principal authorizing this CARD Set. Null in v0.1.0 — future enhancement for cryptographic consent proof."
+        }
+      }
+    },
+    "entity_card": {
+      "type": "object",
+      "required": [
+        "card_type",
+        "agent_id",
+        "agent_name",
+        "platform",
+        "shield_level",
+        "tno_id",
+        "ve_endpoint"
+      ],
+      "description": "Entity CARD — 'Who is this agent?' Identifies the CARD-Carrying Agent, its authorization chain, and its trust level.",
+      "properties": {
+        "card_type": {
+          "type": "string",
+          "const": "entity",
+          "description": "Always 'entity' for the Entity CARD."
+        },
+        "agent_id": {
+          "type": "string",
+          "format": "uri",
+          "description": "The CCA's unique identifier on the Trust Network.",
+          "examples": [
+            "card:entity:agent-bigcroc-001"
+          ]
+        },
+        "agent_name": {
+          "type": "string",
+          "description": "Human-readable agent name.",
+          "examples": [
+            "BigCROC"
+          ]
+        },
+        "principal_id": {
+          "type": "string",
+          "format": "uri",
+          "description": "The NHB who authorized this agent. Must match principal.id."
+        },
+        "platform": {
+          "type": "string",
+          "description": "The agent platform and version.",
+          "examples": [
+            "CROCbox v0.8 / OpenClaw Gateway"
+          ]
+        },
+        "shield_level": {
+          "type": "string",
+          "enum": [
+            "green",
+            "yellow"
+          ],
+          "description": "Green = Consent Before Execution (CBE). Yellow = Consent Before Delivery (CBD)."
+        },
+        "tno_id": {
+          "type": "string",
+          "description": "Trust Network Operator identifier.",
+          "examples": [
+            "opn.li"
+          ]
+        },
+        "ve_endpoint": {
+          "type": "string",
+          "format": "uri",
+          "description": "Verification Endpoint URL. The CARD Receiver calls this to verify the agent.",
+          "examples": [
+            "https://ve-staging.opn.li/verify"
+          ]
+        },
+        "certification_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA-256 surface hash proving the agent's shield level certification."
+        },
+        "delegation_vrcs": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "DTG interop hook. Links Entity CARD to Verifiable Relationship Credentials.",
+          "properties": {
+            "issuer_vrc": {
+              "type": "string",
+              "format": "uri"
+            },
+            "holder_vrc": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      }
+    },
+    "data_card": {
+      "type": "object",
+      "required": [
+        "card_type",
+        "data_resources"
+      ],
+      "description": "Data CARD — 'What data will this agent access?' Declares the specific resources the agent needs and explicitly excludes resources it does not.",
+      "properties": {
+        "card_type": {
+          "type": "string",
+          "const": "data",
+          "description": "Always 'data' for the Data CARD."
+        },
+        "data_resources": {
+          "type": "array",
+          "description": "Resources the agent requests access to.",
+          "items": {
+            "type": "object",
+            "required": [
+              "resource",
+              "access",
+              "description"
+            ],
+            "properties": {
+              "resource": {
+                "type": "string",
+                "description": "Resource identifier. Platform-specific format.",
+                "examples": [
+                  "subreddit:posts",
+                  "user:subscriptions"
+                ]
+              },
+              "access": {
+                "type": "string",
+                "enum": [
+                  "read",
+                  "write",
+                  "read-write"
+                ],
+                "description": "Access level requested."
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable explanation of what this resource contains."
+              }
+            }
+          }
+        },
+        "excluded_resources": {
+          "type": "array",
+          "description": "Resources the agent explicitly does NOT request. Transparency mechanism.",
+          "items": {
+            "type": "object",
+            "required": [
+              "resource",
+              "reason"
+            ],
+            "properties": {
+              "resource": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Human-readable reason for exclusion."
+              }
+            }
+          }
+        },
+        "data_format": {
+          "type": "string",
+          "description": "Expected response format from the platform.",
+          "examples": [
+            "JSON",
+            "XML",
+            "CSV"
+          ]
+        },
+        "nhb_readable_summary": {
+          "type": "string",
+          "description": "Plain-English summary for the NHB consent card. Under 280 characters.",
+          "maxLength": 280
+        }
+      }
+    },
+    "use_card": {
+      "type": "object",
+      "required": [
+        "card_type",
+        "permitted_actions"
+      ],
+      "description": "Use CARD — 'What will the agent do with the data?' Declares permitted and prohibited actions.",
+      "properties": {
+        "card_type": {
+          "type": "string",
+          "const": "use",
+          "description": "Always 'use' for the Use CARD."
+        },
+        "permitted_actions": {
+          "type": "array",
+          "description": "Actions the agent is authorized to perform.",
+          "items": {
+            "type": "object",
+            "required": [
+              "action",
+              "description"
+            ],
+            "properties": {
+              "action": {
+                "type": "string",
+                "description": "Action identifier.",
+                "examples": [
+                  "summarize",
+                  "search",
+                  "curate",
+                  "alert"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable explanation of what this action does."
+              }
+            }
+          }
+        },
+        "prohibited_actions": {
+          "type": "array",
+          "description": "Actions the agent is explicitly NOT authorized to perform. Transparency mechanism.",
+          "items": {
+            "type": "object",
+            "required": [
+              "action",
+              "reason"
+            ],
+            "properties": {
+              "action": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Human-readable reason for prohibition."
+              }
+            }
+          }
+        },
+        "nhb_readable_summary": {
+          "type": "string",
+          "description": "Plain-English summary for the NHB consent card. Under 280 characters.",
+          "maxLength": 280
+        }
+      }
+    },
+    "boundary_card": {
+      "type": "object",
+      "required": [
+        "card_type",
+        "constraint_domain"
+      ],
+      "description": "Boundary CARD — 'When and where can this agent operate?' Defines behavioral constraints independent of data access. Specializations identified by constraint_domain.",
+      "properties": {
+        "card_type": {
+          "type": "string",
+          "const": "boundary",
+          "description": "Always 'boundary' for the Boundary CARD."
+        },
+        "constraint_domain": {
+          "type": "string",
+          "description": "Domain-specific constraint type. Examples: 'reddit-access', 'payment-action', 'general'.",
+          "examples": [
+            "reddit-access",
+            "payment-action",
+            "general"
+          ]
+        },
+        "time_window": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Temporal constraint on agent operation.",
+          "properties": {
+            "start": {
+              "type": "string",
+              "description": "Start time (HH:MM format)."
+            },
+            "end": {
+              "type": "string",
+              "description": "End time (HH:MM format)."
+            },
+            "timezone": {
+              "type": "string",
+              "description": "IANA timezone identifier."
+            }
+          }
+        },
+        "rate_limit": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Rate limiting constraint.",
+          "properties": {
+            "calls_per_day": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "calls_per_minute": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "scope_constraints": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Platform-specific scope constraints. Structure varies by constraint_domain.",
+          "additionalProperties": true
+        },
+        "require_confirmation": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true, NHB sees a consent card before the first action each session. Default: true."
+        },
+        "nhb_readable_summary": {
+          "type": "string",
+          "description": "Plain-English summary for the NHB consent card. Under 280 characters.",
+          "maxLength": 280
+        }
+      }
+    },
+    "tno_attestation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Trust Network Operator attestation. The TNO signs the CARD Set to confirm all four CARDs are valid. Null in v0.1.0 — future enhancement.",
+      "properties": {
+        "tno_id": {
+          "type": "string"
+        },
+        "attested_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "signature": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
