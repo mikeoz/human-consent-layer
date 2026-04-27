@@ -1,0 +1,28 @@
+{
+  "name": "@opnli/card-receiver-deno",
+  "version": "0.2.0-deno",
+  "description": "CARD Receiver SDK — Deno/TypeScript port for Supabase Edge Functions",
+  "exports": "./src/index.ts",
+  "tasks": {
+    "test": "deno run --allow-read --allow-net test/test-sdk.ts",
+    "test:offline": "deno run --allow-read test/test-sdk.ts",
+    "check": "deno check src/index.ts test/test-sdk.ts",
+    "fmt": "deno fmt src/ test/",
+    "lint": "deno lint src/ test/"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["deno.window", "dom"]
+  },
+  "fmt": {
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "semiColons": true,
+    "singleQuote": false
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}

@@ -67,7 +67,7 @@ async function validateCardSet(cardSet, platformPolicy, options = {}) {
 
   // ── Entity CARD: Verify against VE ──────────────────────────
   if (options.veEndpoint) {
-    const veResult = await verifyEntityWithVE(cardSet.entity_card, options.veEndpoint, options.timeout);
+    const veResult = await verifyEntityWithVE(cardSet.entity_card, cardSet.set_id, options.veEndpoint, options.timeout);
     if (!veResult.verified) {
       errors.push('VE verification failed: ' + veResult.reason);
     }
@@ -152,10 +152,31 @@ async function validateCardSet(cardSet, platformPolicy, options = {}) {
 
 /**
  * Verify an Entity CARD against the Verification Endpoint.
- * Fail-closed: VE unreachable = denied (INV-FC).
+ *
+ * Implements the six-field schema enforced by ve-staging.opn.li:
+ *   { agent_id, card_id, operation_type, session_id, timestamp, request_hash }
+ *
+ * The request_hash is SHA-256 over the canonical concatenation:
+ *   agent_id + card_id + operation_type + session_id + timestamp
+ *
+ * Fail-closed: any error or non-2xx response = denied (INV-FC).
+ *
+ * @param {object} entityCard - The Entity CARD from the CARD Set
+ * @param {string} cardId - The CARD Set's set_id (passed by validateCardSet)
+ * @param {string} veEndpoint - VE URL (e.g., 'https://ve-staging.opn.li/v1/verify')
+ * @param {number} [timeout=5000] - Request timeout in milliseconds
+ * @param {string} [operationType='api_call'] - One of the VE's accepted operation types
+ * @returns {Promise<{verified: boolean, reason: string|null, ve_response?: object}>}
  */
-async function verifyEntityWithVE(entityCard, veEndpoint, timeout = 5000) {
+async function verifyEntityWithVE(entityCard, cardId, veEndpoint, timeout = 5000, operationType = 'api_call') {
   try {
+    const sessionId = 've-verify-' + crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+
+    // Canonical hash input — order matters (must match VE)
+    const hashInput = entityCard.agent_id + cardId + operationType + sessionId + timestamp;
+    const requestHash = sha256(hashInput);
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
 
@@ -163,24 +184,48 @@ async function verifyEntityWithVE(entityCard, veEndpoint, timeout = 5000) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        operation: 'verify',
         agent_id: entityCard.agent_id,
-        shield_level: entityCard.shield_level,
-        certification_hash: entityCard.certification_hash
+        card_id: cardId,
+        operation_type: operationType,
+        session_id: sessionId,
+        timestamp,
+        request_hash: requestHash
       }),
       signal: controller.signal
     });
 
     clearTimeout(timer);
 
-    if (!res.ok) {
-      return { verified: false, reason: 'VE returned ' + res.status };
+    let parsed = {};
+    try {
+      parsed = await res.json();
+    } catch (_) {
+      // VE returned non-JSON; treat as failure with status code only
     }
 
-    const data = await res.json();
+    if (!res.ok) {
+      const reason = parsed.error || ('VE returned ' + res.status);
+      const message = parsed.message || '';
+      return {
+        verified: false,
+        reason: message ? reason + ': ' + message : reason,
+        ve_response: parsed
+      };
+    }
+
+    // Success path: VE returns a decision/verdict in the body.
+    // We accept several shapes the VE has used historically.
+    const decision = parsed.decision || parsed.verdict || parsed.result;
+    const verified = decision === 'allow' || decision === 'verified' || decision === 'ok' || parsed.verified === true;
+
+    if (verified) {
+      return { verified: true, reason: null, ve_response: parsed };
+    }
+
     return {
-      verified: data.decision === 'allow' || data.decision === 'verified',
-      reason: data.decision === 'allow' || data.decision === 'verified' ? null : 'VE denied: ' + (data.reason || 'unknown')
+      verified: false,
+      reason: 'VE denied: ' + (parsed.reason || 'unknown'),
+      ve_response: parsed
     };
   } catch (e) {
     // INV-FC: fail-closed on any error

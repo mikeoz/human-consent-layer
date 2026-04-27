@@ -5,3 +5,6 @@ dist/
 *.log
 .DS_Store
 coverage/
+
+# Local-only backup copies of files modified by ENG patch scripts
+*.bak

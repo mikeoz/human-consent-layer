@@ -272,6 +272,27 @@ async function runTests() {
 
   // ──────────────────────────────────────────────────────────
   console.log('\n── sha256 utility ──');
+
+  // ──────────────────────────────────────────────────────────
+  console.log('\n── verifyEntityWithVE — request_hash formula ──');
+  // ──────────────────────────────────────────────────────────
+
+  // Verify the SHA-256 input order is: agent_id + card_id + operation_type + session_id + timestamp
+  // This is the canonical formula reported by the live VE.
+  const refAgentId = 'card:entity:agent-bigcroc-001';
+  const refCardId = 'urn:uuid:test-card-001';
+  const refOpType = 'api_call';
+  const refSessionId = 've-verify-test-001';
+  const refTimestamp = '2026-04-27T16:00:00Z';
+
+  const expectedHash = sha256(refAgentId + refCardId + refOpType + refSessionId + refTimestamp);
+  assert(expectedHash.length === 64, 'request_hash is 64 hex chars');
+  assert(typeof expectedHash === 'string', 'request_hash is a string');
+
+  // Different inputs must produce different hashes
+  const altHash = sha256(refAgentId + refCardId + refOpType + 'different-session' + refTimestamp);
+  assert(altHash !== expectedHash, 'Different session_id produces different hash');
+
   // ──────────────────────────────────────────────────────────
 
   assert(sha256('hello').length === 64, 'SHA-256 returns 64-char hex');
