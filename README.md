@@ -155,7 +155,7 @@ SSL secured the pipe. OAuth secured the handshake. WebMCP standardizes the tool 
 
 ## License
 
-Apache 2.0 — Openly Personal Networks, Inc.
+Apache 2.0 — Opnli Corporation
 
 Certain enforcement mechanisms implemented in products built on this specification are the subject of [Provisional Patent Application #63/992,579](https://opn.li) filed February 27, 2026. The HCL specification and schemas in this repository are open and freely implementable under the Apache 2.0 license.
 
